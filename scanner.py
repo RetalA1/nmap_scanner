@@ -49,40 +49,17 @@ elif resp == '2':
 elif resp == '3':
     scan_type = "Comprehensive Scan"
     print("Nmap Version: ", scanner.nmap_version())
-    scanner.scan(ip_addr, '1-1024', '-v -sU')
+    scanner.scan(ip_addr, arguments='-p- -sS -sV -O -v')
     print(scanner.scaninfo())
     print("IP Status: ", scanner[ip_addr].state())
     print(scanner[ip_addr].all_protocols())
-    if 'udp' in scanner[ip_addr]:
-        print("Open UDP Ports: ", scanner[ip_addr]['udp'].keys())
+    if 'tcp' in scanner[ip_addr]:
+        print("Open TCP Ports: ", scanner[ip_addr]['tcp'].keys())
     else:
-        print("No open UDP ports found.")
+        print("No open TCP ports found.")
 elif resp >= '4':
     print("Please enter a valid option")
 
-import datetime
-timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-log_data = []
-log_data.append(f"Scan Timestamp: {timestamp}")
-log_data.append(f"Target: {ip_addr}")
-log_data.append(f"Scan Type: {scan_type}")
-log_data.append("")
-
-if 'tcp' in scanner[ip_addr]:
-    log_data.append("Open TCP Ports:")
-    for port in scanner[ip_addr]['tcp'].keys():
-        state = scanner[ip_addr]['tcp'][port]['state']
-        log_data.append(f"  {port} : {state}")
-else:
-    log_data.append("No TCP results found.")
-
-if 'udp' in scanner[ip_addr]:
-    log_data.append("Open UDP Ports:")
-    for port in scanner[ip_addr]['udp'].keys():
-        state = scanner[ip_addr]['udp'][port]['state']
-        log_data.append(f"  {port} : {state}")
-else:
-    log_data.append("No UDP results found.")
 
 import datetime, os
 
@@ -97,23 +74,25 @@ log_data.append(f"Target: {ip_addr}")
 log_data.append(f"Scan Type: {scan_type}")
 log_data.append("")
 
-if 'tcp' in scanner[ip_addr]:
+if 'tcp' in scanner[ip_addr] and scanner[ip_addr]['tcp']:
     log_data.append("Open TCP Ports:")
-    for port in scanner[ip_addr]['tcp'].keys():
-        log_data.append(f"  {port}")
-else:
-    log_data.append("No TCP ports found.")
+    for port, port_data in scanner[ip_addr]['tcp'].items():
+        state = port_data.get('state', 'unknown')
+        log_data.append(f"  {port} : {state}")
 
-udp_res = scanner[ip_addr].get('udp', {})
-log_data.append("\nOpen UDP Ports:")
-if udp_res:
-    for port in udp_res.keys():
-        log_data.append(f"  {port}")
-else:
-    log_data.append("  None found.")
+if 'udp' in scanner[ip_addr] and scanner[ip_addr]['udp']:
+    log_data.append("\nOpen UDP Ports:")
+    for port, port_data in scanner[ip_addr]['udp'].items():
+        state = port_data.get('state', 'unknown')
+        log_data.append(f"  {port} : {state}")
+
+if ('tcp' not in scanner[ip_addr] or not scanner[ip_addr]['tcp']) and \
+   ('udp' not in scanner[ip_addr] or not scanner[ip_addr]['udp']):
+    log_data.append("No scanned ports found.")
 
 filename = f"logs/scan_{ip_addr}_{timestamp}.txt"
 with open(filename, "w") as f:
     f.write("\n".join(log_data))
 
 print(f"\n[+] Scan saved to {filename}")
+
